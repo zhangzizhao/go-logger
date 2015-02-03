@@ -92,8 +92,8 @@ func SetRollingFile(fileDir, fileName string, maxNumber int32, maxSize int64, _u
 }
 
 
-func SetRotatingFile(fileDir, fileName string, maxNumber int32, maxSize int64, _unit UNIT) {
-	maxFileCount = maxNumber
+func SetRotatingFile(fileDir, fileName string, maxSize int64, _unit UNIT) {
+	maxFileCount = 2
 	maxFileSize = maxSize * int64(_unit)
 	RotatingFile = true
 	RollingFile = false
@@ -101,13 +101,6 @@ func SetRotatingFile(fileDir, fileName string, maxNumber int32, maxSize int64, _
 	logObj = &_FILE{dir: fileDir, filename: fileName, isCover: false, mu: new(sync.RWMutex)}
 	logObj.mu.Lock()
 	defer logObj.mu.Unlock()
-	for i := 1; i <= int(maxNumber); i++ {
-		if isExist(fileDir + "/" + fileName + "." + strconv.Itoa(i)) {
-			logObj._suffix = i
-		} else {
-			break
-		}
-	}
 	if !logObj.isMustRename() {
 		logObj.logfile, _ = os.OpenFile(fileDir+"/"+fileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
 		logObj.lg = log.New(logObj.logfile, "", log.Ldate|log.Ltime|log.Lshortfile)
@@ -126,7 +119,7 @@ func SetRollingDaily(fileDir, fileName string) {
 	defer logObj.mu.Unlock()
 
 	if !logObj.isMustRename() {
-		logObj.logfile, _ = os.OpenFile(fileDir+"/"+fileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
+		logObj.logfile, _ = os.OpenFile(fileDir+"/"+fileName,  os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
 		logObj.lg = log.New(logObj.logfile, "", log.Ldate|log.Ltime|log.Lshortfile)
 	} else {
 		logObj.rename()
@@ -246,7 +239,7 @@ func (f *_FILE) rename() {
 			t, _ := time.Parse(DATEFORMAT, time.Now().Format(DATEFORMAT))
 			f._date = &t
 			f.logfile, _ = os.Create(f.dir + "/" + f.filename)
-			f.lg = log.New(logObj.logfile, "\n", log.Ldate|log.Ltime|log.Lshortfile)
+			f.lg = log.New(logObj.logfile, "", log.Ldate|log.Ltime|log.Lshortfile)
 		}
 	} else {
 		f.coverNextOne()
@@ -269,7 +262,7 @@ func (f *_FILE) coverNextOne() {
 		os.Rename(f.dir+"/"+f.filename, f.dir+"/"+f.filename+"."+strconv.Itoa(int(f._suffix)))
 	}
 	f.logfile, _ = os.Create(f.dir + "/" + f.filename)
-	f.lg = log.New(logObj.logfile, "\n", log.Ldate|log.Ltime|log.Lshortfile)
+	f.lg = log.New(logObj.logfile, "", log.Ldate|log.Ltime|log.Lshortfile)
 }
 
 func fileSize(file string) int64 {
