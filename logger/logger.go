@@ -82,6 +82,11 @@ func SetRollingFile(fileDir, fileName string, maxNumber int32, maxSize int64, _u
 			break
 		}
 	}
+	if _, err := os.Stat(fileDir); err != nil {
+		if os.IsNotExist(err) {
+			os.Mkdir(fileDir, 0755)
+		}
+	}
 	if !logObj.isMustRename() {
 		logObj.logfile, _ = os.OpenFile(fileDir+"/"+fileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
 		logObj.lg = log.New(logObj.logfile, "", log.Ldate|log.Ltime|log.Lshortfile)
@@ -91,7 +96,6 @@ func SetRollingFile(fileDir, fileName string, maxNumber int32, maxSize int64, _u
 	go fileMonitor()
 }
 
-
 func SetRotatingFile(fileDir, fileName string, maxSize int64, _unit UNIT) {
 	maxFileCount = 2
 	maxFileSize = maxSize * int64(_unit)
@@ -99,6 +103,11 @@ func SetRotatingFile(fileDir, fileName string, maxSize int64, _unit UNIT) {
 	RollingFile = false
 	dailyRolling = false
 	logObj = &_FILE{dir: fileDir, filename: fileName, isCover: false, mu: new(sync.RWMutex)}
+	if _, err := os.Stat(fileDir); err != nil {
+		if os.IsNotExist(err) {
+			os.Mkdir(fileDir, 0755)
+		}
+	}
 	logObj.mu.Lock()
 	defer logObj.mu.Unlock()
 	if !logObj.isMustRename() {
@@ -116,10 +125,15 @@ func SetRollingDaily(fileDir, fileName string) {
 	t, _ := time.Parse(DATEFORMAT, time.Now().Format(DATEFORMAT))
 	logObj = &_FILE{dir: fileDir, filename: fileName, _date: &t, isCover: false, mu: new(sync.RWMutex)}
 	logObj.mu.Lock()
+	if _, err := os.Stat(fileDir); err != nil {
+		if os.IsNotExist(err) {
+			os.Mkdir(fileDir, 0755)
+		}
+	}
 	defer logObj.mu.Unlock()
 
 	if !logObj.isMustRename() {
-		logObj.logfile, _ = os.OpenFile(fileDir+"/"+fileName,  os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
+		logObj.logfile, _ = os.OpenFile(fileDir+"/"+fileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
 		logObj.lg = log.New(logObj.logfile, "", log.Ldate|log.Ltime|log.Lshortfile)
 	} else {
 		logObj.rename()
