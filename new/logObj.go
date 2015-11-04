@@ -10,13 +10,13 @@ import (
 )
 
 const (
-	bufferSize = 256 * 1024
+	bufferSize = 256 * 1024 // param ?
 )
 
 type Severity int
 
 var (
-	flushInterval time.Duration = time.Second * 3
+	flushInterval time.Duration = time.Second * 3 // param ?
 	rotateNum     int
 	maxSize       uint64
 	fall          bool
@@ -39,7 +39,7 @@ var severityName = []string{
 }
 
 const (
-	numSeverity = 5
+	numSeverity = 5 // param ?
 )
 
 type stdBackend struct{}
@@ -50,7 +50,7 @@ func (self *stdBackend) Log(s Severity, msg []byte) {
 
 type _LogDir struct {
 	Dir string
-	// filename string
+
 	_suffix int
 	isCover bool
 	_date   *time.Time
@@ -145,7 +145,7 @@ func (self *FileBackend) Flush() {
 		self.files[i].Sync()
 	}
 }
-func (self *syncBuffer) write(b []byte) {
+func (self *syncBuffer) write(b []byte) { // write test when cur or rotate
 	if maxSize > 0 && rotateNum > 0 && self.count+uint64(len(b)) >= maxSize {
 		os.Rename(self.filePath, self.filePath+fmt.Sprintf(".%03d", self.cur))
 		self.cur++
