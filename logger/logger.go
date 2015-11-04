@@ -66,7 +66,18 @@ func SetLevel(_level LEVEL) {
 	logLevel = _level
 }
 
-func SetRollingFile(fileDir, fileName string, maxNumber int32, maxSize int64, _unit UNIT) {
+func initLogDir(dirPath string) error {
+	if _, err := os.Stat(dirPath); err != nil {
+		if os.IsNotExist(err) {
+			os.Mkdir(dirPath, 0755)
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
+func SetRollingFile(fileDir, fileName string, maxNumber int32, maxSize int64, _unit UNIT) error {
 	maxFileCount = maxNumber
 	maxFileSize = maxSize * int64(_unit)
 	RollingFile = true
@@ -82,10 +93,8 @@ func SetRollingFile(fileDir, fileName string, maxNumber int32, maxSize int64, _u
 			break
 		}
 	}
-	if _, err := os.Stat(fileDir); err != nil {
-		if os.IsNotExist(err) {
-			os.Mkdir(fileDir, 0755)
-		}
+	if err := initLogDir(fileDir); err != nil {
+		return err
 	}
 	if !logObj.isMustRename() {
 		logObj.logfile, _ = os.OpenFile(fileDir+"/"+fileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
@@ -94,19 +103,18 @@ func SetRollingFile(fileDir, fileName string, maxNumber int32, maxSize int64, _u
 		logObj.rename()
 	}
 	go fileMonitor()
+	return nil
 }
 
-func SetRotatingFile(fileDir, fileName string, maxSize int64, _unit UNIT) {
+func SetRotatingFile(fileDir, fileName string, maxSize int64, _unit UNIT) error {
 	maxFileCount = 2
 	maxFileSize = maxSize * int64(_unit)
 	RotatingFile = true
 	RollingFile = false
 	dailyRolling = false
 	logObj = &_FILE{dir: fileDir, filename: fileName, isCover: false, mu: new(sync.RWMutex)}
-	if _, err := os.Stat(fileDir); err != nil {
-		if os.IsNotExist(err) {
-			os.Mkdir(fileDir, 0755)
-		}
+	if err := initLogDir(fileDir); err != nil {
+		return err
 	}
 	logObj.mu.Lock()
 	defer logObj.mu.Unlock()
@@ -117,18 +125,17 @@ func SetRotatingFile(fileDir, fileName string, maxSize int64, _unit UNIT) {
 		logObj.rename()
 	}
 	go fileMonitor()
+	return nil
 }
 
-func SetRollingDaily(fileDir, fileName string) {
+func SetRollingDaily(fileDir, fileName string) error {
 	RollingFile = false
 	dailyRolling = true
 	t, _ := time.Parse(DATEFORMAT, time.Now().Format(DATEFORMAT))
 	logObj = &_FILE{dir: fileDir, filename: fileName, _date: &t, isCover: false, mu: new(sync.RWMutex)}
 	logObj.mu.Lock()
-	if _, err := os.Stat(fileDir); err != nil {
-		if os.IsNotExist(err) {
-			os.Mkdir(fileDir, 0755)
-		}
+	if err := initLogDir(fileDir); err != nil {
+		return err
 	}
 	defer logObj.mu.Unlock()
 
@@ -138,6 +145,7 @@ func SetRollingDaily(fileDir, fileName string) {
 	} else {
 		logObj.rename()
 	}
+	return nil
 }
 
 func console(s ...interface{}) {
