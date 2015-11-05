@@ -19,6 +19,8 @@ var (
 	rotateNum int
 	maxSize   uint64
 	fall      bool
+	console   bool
+	logLevel  Severity
 )
 
 const (
@@ -65,6 +67,28 @@ type syncBuffer struct {
 	count    uint64
 	cur      int
 	filePath string
+}
+
+func SetFall(v bool) {
+	fall = v
+}
+
+func SetConsole(v bool) {
+	console = v
+}
+
+func SetLogLevel(v interface{}) {
+	if s, ok := v.(Severity); ok {
+		logLevel = s
+	} else {
+		if s, ok := v.(string); ok {
+			for i, name := range severityName {
+				if name == s {
+					logLevel = Severity(i)
+				}
+			}
+		}
+	}
 }
 
 func (f *LogDir) pathInit() error {
@@ -124,6 +148,13 @@ func (self *FileBackend) Log(s Severity, msg []byte) {
 	if s == FATAL {
 		self.Flush()
 	}
+	//////  move to log.go?
+	if console {
+		go os.Stdout.Write(msg)
+		// os.Stdout.Write([]byte("\n"))
+	}
+	//////
+
 }
 func (self *FileBackend) flushDaemon(interval int) {
 	for {
@@ -139,6 +170,7 @@ func (self *FileBackend) close() {
 //  完成切割，换fb（lock住flush）
 // func (self *FileBackend) monitorFiles() {
 // }
+
 func (self *syncBuffer) Sync() error {
 	return self.file.Sync()
 }
